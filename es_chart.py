@@ -1,8 +1,16 @@
 import streamlit as st
-import yfinance as yf
-import mplfinance as mpf
+import sys
 from datetime import datetime, timedelta
-import matplotlib.pyplot as plt
+
+# Check and install missing packages
+try:
+    import yfinance as yf
+    import mplfinance as mpf
+    import matplotlib.pyplot as plt
+except ImportError as e:
+    st.error(f"Missing required packages: {e}")
+    st.info("Please make sure requirements.txt includes: yfinance, mplfinance, matplotlib")
+    st.stop()
 
 st.title('SPY Daily Chart')
 st.write('Displaying SPY 1-minute candlestick chart for the previous trading day')
@@ -15,12 +23,13 @@ try:
     # Download SPY 1-minute data for yesterday
     data = yf.download("SPY", start=yesterday, end=today, interval="1m")
 
-    # Filter only yesterday's data
-    data = data[data.index.date == yesterday]
-
     if data.empty:
-        st.warning(f"No data available for {yesterday}")
+        st.warning(f"No data available for {yesterday} (may be weekend/holiday)")
+        st.info("Markets are closed on weekends and holidays. Try again on a trading day.")
     else:
+        # Filter only yesterday's data
+        data = data[data.index.date == yesterday]
+        
         # Create the plot
         fig, axes = mpf.plot(data, type='candle', style='charles',
                            title=f"SPY Chart - {yesterday}",
@@ -39,10 +48,9 @@ try:
             st.metric("Close", f"${data['Close'].iloc[-1]:.2f}")
         with col3:
             change = data['Close'].iloc[-1] - data['Open'].iloc[0]
-            st.metric("Change", f"${change:.2f}")
+            change_pct = (change / data['Open'].iloc[0]) * 100
+            st.metric("Change", f"${change:.2f}", f"{change_pct:.2f}%")
 
-except ImportError as e:
-    st.error("Required packages not installed. Please check your requirements.txt file")
-    st.code("pip install yfinance mplfinance")
 except Exception as e:
-    st.error(f"An error occurred: {e}")
+    st.error(f"An error occurred: {str(e)}")
+    st.info("This might be due to missing data or API issues. Please try again later.")
