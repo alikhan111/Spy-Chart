@@ -10,14 +10,17 @@ st.title('SPY Daily Chart')
 st.write('Displaying SPY 1-minute candlestick chart for the previous trading day')
 
 try:
-    # Get yesterday's date (fixed deprecation warning)
+    # Get yesterday's date
     today = datetime.now(timezone.utc).date()
     yesterday = today - timedelta(days=1)
     
     st.info(f"Fetching data for {yesterday}...")
 
-    # Download SPY 1-minute data for yesterday (explicitly set auto_adjust)
+    # Download SPY 1-minute data for yesterday
     data = yf.download("SPY", start=yesterday, end=today, interval="1m", auto_adjust=True)
+    
+    st.write(f"Raw data shape: {data.shape}")
+    st.write(f"Data columns: {list(data.columns)}")
     
     if data.empty:
         st.warning(f"No data available for {yesterday} (may be weekend/holiday)")
@@ -47,17 +50,42 @@ try:
         st.stop()
     
     st.success(f"Successfully loaded {len(data_clean)} minutes of trading data")
+    st.write(f"Cleaned data shape: {data_clean.shape}")
     
-    # Create the plot
-    fig, axes = mpf.plot(data_clean, type='candle', style='charles',
-                       title=f"SPY Chart - {yesterday}",
-                       volume=True, 
-                       mav=(9, 21),
-                       returnfig=True,
-                       figsize=(12, 8))
+    # Ensure we have the required columns for mplfinance
+    required_cols = ['Open', 'High', 'Low', 'Close', 'Volume']
+    missing_cols = [col for col in required_cols if col not in data_clean.columns]
     
-    # Display the plot in Streamlit
-    st.pyplot(fig)
+    if missing_cols:
+        st.error(f"Missing required columns: {missing_cols}")
+        st.stop()
+    
+    # Convert index to datetime if it's not already
+    if not isinstance(data_clean.index, pd.DatetimeIndex):
+        data_clean.index = pd.to_datetime(data_clean.index)
+    
+    # Create the plot with explicit data validation
+    try:
+        fig, axes = mpf.plot(data_clean, 
+                           type='candle', 
+                           style='charles',
+                           title=f"SPY Chart - {yesterday}",
+                           volume=True, 
+                           mav=(9, 21),
+                           returnfig=True,
+                           figsize=(12, 8))
+        
+        # Display the plot in Streamlit
+        st.pyplot(fig)
+        
+    except Exception as plot_error:
+        st.error(f"Chart creation failed: {plot_error}")
+        with st.expander("Data Preview for Debugging"):
+            st.write("First 10 rows:")
+            st.dataframe(data_clean.head(10))
+            st.write("Data info:")
+            st.write(data_clean.info())
+        st.stop()
     
     # Show some basic stats
     st.subheader('Daily Statistics')
@@ -85,5 +113,6 @@ except Exception as e:
         st.write(f"Python version: {sys.version}")
         try:
             st.write(f"yfinance version: {yf.__version__}")
+            st.write(f"mplfinance version: {mpf.__version__}")
         except:
-            st.write("yfinance version: Not available")
+            st.write("Package versions: Not available")
