@@ -16,8 +16,8 @@ try:
     
     st.info(f"Fetching data for {yesterday}...")
 
-    # Download SPY 1-minute data for yesterday
-    data = yf.download("SPY", start=yesterday, end=today, interval="1m")
+    # Download SPY 1-minute data for yesterday (explicitly set auto_adjust)
+    data = yf.download("SPY", start=yesterday, end=today, interval="1m", auto_adjust=True)
     
     if data.empty:
         st.warning(f"No data available for {yesterday} (may be weekend/holiday)")
