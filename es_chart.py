@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from datetime import datetime, timedelta, timezone
 
 st.title('SPY Daily Chart')
-st.write('Displaying SPY 1-minute candlestick chart for the previous trading day')
+st.write('Displaying SPY 1-minute chart for the previous trading day')
 
 try:
     # Get yesterday's date
@@ -27,18 +27,26 @@ try:
         st.warning(f"No intraday data for {yesterday}")
         st.stop()
     
-    # Create simple plot with matplotlib instead of mplfinance
+    # Convert to numeric
+    for col in ['Open', 'High', 'Low', 'Close', 'Volume']:
+        data[col] = pd.to_numeric(data[col], errors='coerce')
+    
+    data = data.dropna()
+    
+    # Create OHLC chart manually
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 8), gridspec_kw={'height_ratios': [3, 1]})
     
-    # Price chart
-    ax1.plot(data.index, data['Close'], label='Close Price', linewidth=1)
-    ax1.set_title(f'SPY Chart - {yesterday}')
+    # OHLC bars
+    for i, (idx, row) in enumerate(data.iterrows()):
+        ax1.plot([i, i], [row['Low'], row['High']], color='black', linewidth=1)
+        ax1.plot([i, i], [row['Open'], row['Close']], color='green' if row['Close'] >= row['Open'] else 'red', linewidth=3)
+    
+    ax1.set_title(f'SPY OHLC Chart - {yesterday}')
     ax1.set_ylabel('Price ($)')
     ax1.grid(True)
-    ax1.legend()
     
     # Volume chart
-    ax2.bar(data.index, data['Volume'], alpha=0.7, color='blue')
+    ax2.bar(range(len(data)), data['Volume'], alpha=0.7, color='blue')
     ax2.set_ylabel('Volume')
     ax2.grid(True)
     
