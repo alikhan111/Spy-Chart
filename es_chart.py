@@ -3,6 +3,7 @@ import yfinance as yf
 import mplfinance as mpf
 import pandas as pd
 import numpy as np
+import sys
 from datetime import datetime, timedelta
 
 st.title('SPY Daily Chart')
@@ -20,7 +21,6 @@ try:
     
     # Debug: Show raw data info
     st.write(f"Raw data shape: {data.shape}")
-    st.write(f"Data columns: {list(data.columns)}")
     
     if data.empty:
         st.warning(f"No data available for {yesterday} (may be weekend/holiday)")
@@ -87,13 +87,6 @@ try:
             st.metric("Low", f"${data_clean['Low'].min():.2f}")
         with col7:
             st.metric("Volume", f"{data_clean['Volume'].sum():,}")
-        
-        # Data preview
-        with st.expander("View Raw Data (First 10 rows)"):
-            st.dataframe(data_clean.head(10))
-            
-        with st.expander("View Data Summary"):
-            st.write(data_clean.describe())
 
 except Exception as e:
     st.error(f"An error occurred: {str(e)}")
